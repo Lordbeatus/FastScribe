@@ -50,6 +50,10 @@ class YouTubeTranscriber:
         try:
             # Download audio using yt-dlp
             print(f"Downloading audio from video: {self.video_id}")
+            
+            # Determine if using cookies
+            using_cookies = cookies_from_browser or (cookies_file and os.path.exists(cookies_file)) or os.path.exists('cookies.txt')
+            
             ydl_opts = {
                 'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
                 'postprocessors': [{
@@ -61,16 +65,21 @@ class YouTubeTranscriber:
                 'quiet': False,
                 'no_warnings': False,
                 'extract_flat': False,
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
                 'nocheckcertificate': True,
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-us,en;q=0.5',
                     'Sec-Fetch-Mode': 'navigate',
                 },
             }
+            
+            # Only use android client if NOT using cookies (android doesn't support cookies)
+            if not using_cookies:
+                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+            else:
+                # When using cookies, use web client only
+                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['web']}}
             
             # Add cookie options if provided
             if cookies_from_browser:

@@ -14,6 +14,7 @@ function App() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [transcript, setTranscript] = useState('');
   const [videoId, setVideoId] = useState('');
+  const [language, setLanguage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,7 @@ function App() {
     setTranscript('');
 
     try {
-      const result = await processComplete(url, 'flashcards');
+      const result = await processComplete(url, 'flashcards', language || undefined);
       setFlashcards(result.flashcards);
       setTranscript(result.transcript);
       setVideoId(result.video_id);
@@ -85,6 +86,43 @@ function App() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   required
                 />
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
+                  Transcription Language
+                </label>
+                <select
+                  id="language"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                >
+                  <option value="">Auto-detect</option>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="it">Italian</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="ru">Russian</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Chinese</option>
+                  <option value="ar">Arabic</option>
+                  <option value="hi">Hindi</option>
+                  <option value="nl">Dutch</option>
+                  <option value="pl">Polish</option>
+                  <option value="tr">Turkish</option>
+                  <option value="vi">Vietnamese</option>
+                  <option value="sv">Swedish</option>
+                  <option value="da">Danish</option>
+                  <option value="no">Norwegian</option>
+                  <option value="fi">Finnish</option>
+                </select>
+                <p className="mt-2 text-sm text-gray-500">
+                  Select the video's language for better accuracy, or leave as auto-detect
+                </p>
               </div>
 
               <button

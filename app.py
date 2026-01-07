@@ -63,6 +63,7 @@ def transcribe_video():
     try:
         data = request.get_json()
         url = data.get('url')
+        language = data.get('language')  # Optional language code
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
@@ -76,11 +77,12 @@ def transcribe_video():
         
         # Get transcript using Whisper
         transcriber = YouTubeTranscriber(api_key=API_KEY)
-        transcript_text = transcriber.get_transcript(video_id)
+        transcript_text = transcriber.get_transcript(video_id, language=language)
         
         return jsonify({
             'video_id': video_id,
-            'transcript': transcript_text
+            'transcript': transcript_text,
+            'language': language or 'auto'
         })
     
     except Exception as e:
@@ -165,6 +167,7 @@ def process_complete():
         data = request.get_json()
         url = data.get('url')
         style = data.get('style', 'flashcards')
+        language = data.get('language')  # Optional language code
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
@@ -178,7 +181,7 @@ def process_complete():
         
         # Step 2: Get transcript using Whisper
         transcriber = YouTubeTranscriber(api_key=API_KEY)
-        formatted_text = transcriber.get_transcript(video_id)
+        formatted_text = transcriber.get_transcript(video_id, language=language)
         
         # Step 3: Create flashcards
         creator = NotesCreator(api_key=API_KEY)
@@ -193,7 +196,8 @@ def process_complete():
             'transcript': formatted_text,
             'notes': notes,
             'flashcards': flashcards,
-            'count': len(flashcards)
+            'count': len(flashcards),
+            'language': language or 'auto'
         })
     
     except Exception as e:

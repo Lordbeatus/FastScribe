@@ -22,11 +22,13 @@ class YouTubeTranscriber:
             raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
         self.client = OpenAI(api_key=self.api_key)
     
-    def get_transcript(self, url_or_video_id):
+    def get_transcript(self, url_or_video_id, language=None):
         """
         Get transcript from YouTube video using yt-dlp and Whisper
         Args:
             url_or_video_id: YouTube URL or video ID
+            language: Optional ISO-639-1 language code (e.g., 'en', 'es', 'fr', 'de', 'ja', 'zh')
+                     If None, Whisper will auto-detect the language
         Returns:
             Transcript text
         """
@@ -61,15 +63,21 @@ class YouTubeTranscriber:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
             
-            print(f"Audio downloaded. Transcribing with Whisper...")
+            lang_msg = f" ({language})" if language else " (auto-detect)"
+            print(f"Audio downloaded. Transcribing with Whisper{lang_msg}...")
             
             # Transcribe using OpenAI Whisper API
-            with open(audio_file, 'rb') as audio:
-                transcript_response = self.client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio,
-                    response_format="text"
-                )
+            whisper_params = {
+                "model": "whisper-1",
+                "file": open(audio_file, 'rb'),
+                "response_format": "text"
+            }
+            
+            # Add language parameter if specified
+            if language:
+                whisper_params["language"] = language
+            
+            transcript_response = self.client.audio.transcriptions.create(**whisper_params)
             
             self.formatted_text = transcript_response
             print(f"Transcription complete!")

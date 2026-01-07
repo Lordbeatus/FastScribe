@@ -39,10 +39,11 @@ export const exportAnki = async (flashcards: any[], format: string = 'csv', deck
   return response.data;
 };
 
-export const processComplete = async (url: string, style: string = 'flashcards') => {
+export const processComplete = async (url: string, style: string = 'flashcards', language?: string) => {
   const response = await api.post('/api/process-complete', { 
     url, 
-    style 
+    style,
+    language: language || null
   });
   return response.data;
 };

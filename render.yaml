@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: fastscribe-api
+    env: python
+    buildCommand: pip install -r requirements-server.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FLASK_ENV
+        value: production

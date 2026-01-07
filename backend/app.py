@@ -145,11 +145,11 @@ def create_flashcards():
         if not transcript:
             return jsonify({'error': 'Transcript is required'}), 400
         
-        if not API_KEY:
-            return jsonify({'error': 'OpenAI API key not configured'}), 500
-        
         # Create notes (cycler handles API key)
-        creator = NotesCreator(
+        creator = NotesCreator()
+        notes = creator.create_notes(transcript, style=style)
+        
+        # Parse flashcards
         formatter = NotesFormatter()
         flashcards = formatter.parse_flashcards(notes)
         

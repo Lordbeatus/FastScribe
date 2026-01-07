@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import tempfile
+import base64
 from urlScraper import YouTubeURLScraper
 from transcriber import YouTubeTranscriber
 from createNotes import NotesCreator
@@ -15,6 +16,37 @@ from apiKeyCycler import get_api_key_cycler, get_next_api_key
 
 app = Flask(__name__)
 CORS(app)
+
+# Setup YouTube cookies for production
+COOKIES_PATH = None
+
+if os.getenv('YOUTUBE_COOKIES_BASE64'):
+    # Decode base64 cookies from environment variable
+    try:
+        cookies_b64 = os.getenv('YOUTUBE_COOKIES_BASE64')
+        cookies_data = base64.b64decode(cookies_b64).decode('utf-8')
+        
+        # Write to temp file
+        temp_cookies = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
+        temp_cookies.write(cookies_data)
+        temp_cookies.close()
+        COOKIES_PATH = temp_cookies.name
+        print(f"✓ Using cookies from environment variable")
+    except Exception as e:
+        print(f"⚠ Failed to decode cookies from environment: {e}")
+
+elif os.path.exists('/etc/secrets/cookies.txt'):
+    # Use Render secret file
+    COOKIES_PATH = '/etc/secrets/cookies.txt'
+    print(f"✓ Using cookies from secret file")
+
+elif os.path.exists('cookies.txt'):
+    # Use local cookies.txt for development
+    COOKIES_PATH = 'cookies.txt'
+    print(f"✓ Using local cookies.txt")
+
+else:
+    print("⚠ Warning: No cookies configured - YouTube downloads may fail")
 
 # Initialize API key cycler
 try:
@@ -81,10 +113,15 @@ def transcribe_video():
         
         # Get transcript using Whisper (cycler handles API key)
         transcriber = YouTubeTranscriber()
+        
+        # Use production cookies if available, otherwise use browser cookies from request
+        cookies_file = COOKIES_PATH if COOKIES_PATH else data.get('cookies_file')
+        
         transcript_text = transcriber.get_transcript(
             video_id, 
             language=language,
-            cookies_from_browser=cookies_from_browser
+            cookies_from_browser=cookies_from_browser if not COOKIES_PATH else None,
+            cookies_file=cookies_file
         )
         
         return jsonify({
@@ -173,26 +210,36 @@ def process_complete():
         url = data.get('url')
         style = data.get('style', 'flashcards')
         language = data.get('language')  # Optional language code
+        cookies_from_browser = data.get('cookies_from_browser')  # Optional
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
         
-        if not API_KEY:
-            return jsonify({'error': 'OpenAI API key not configured'}), 500
-        
-        # Step 1: Validate URL
-        scraper = YouTubeURLScraper()
-        video_id = scraper.extract_video_id(url)
         # Step 1: Validate URL
         scraper = YouTubeURLScraper()
         video_id = scraper.extract_video_id(url)
         
         # Step 2: Get transcript using Whisper (cycler handles API key)
         transcriber = YouTubeTranscriber()
-        formatted_text = transcriber.get_transcript(video_id, language=language)
+        
+        # Use production cookies if available, otherwise use browser cookies from request
+        cookies_file = COOKIES_PATH if COOKIES_PATH else data.get('cookies_file')
+        
+        formatted_text = transcriber.get_transcript(
+            video_id, 
+            language=language,
+            cookies_from_browser=cookies_from_browser if not COOKIES_PATH else None,
+            cookies_file=cookies_file
+        )
         
         # Step 3: Create flashcards (cycler handles API key)
-        creator = NotesCreator(
+        creator = NotesCreator()
+        notes = creator.create_notes(formatted_text, style=style)
+        
+        # Step 4: Parse flashcards
+        formatter = NotesFormatter()
+        flashcards = formatter.parse_flashcards(notes)
+        
         return jsonify({
             'video_id': video_id,
             'transcript': formatted_text,

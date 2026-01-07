@@ -1,71 +1,35 @@
 # FastScribe
 
-FastScribe converts YouTube videos into Anki flashcards using OpenAI's Whisper and GPT-4.
+FastScribe is an automated system that converts YouTube videos into Anki flashcards using OpenAI's Whisper and GPT-4. The application downloads audio from YouTube videos, transcribes them using Whisper API, and generates study materials formatted for Anki's spaced repetition system. Both command-line and web interfaces are provided.
 
-## Project Structure
+## Architecture
 
-```
-FastScribe/
-├── backend/              # Flask API server
-│   ├── app.py           # Main Flask application
-│   ├── apiKeyCycler.py  # API key rotation manager
-│   ├── transcriber.py   # YouTube audio download & Whisper transcription
-│   ├── createNotes.py   # GPT-4 flashcard generation
-│   ├── formatNotes.py   # Anki export formatting
-│   ├── urlScraper.py    # YouTube URL parsing
-│   ├── main.py          # CLI interface
-│   ├── requirements-server.txt  # Production dependencies
-│   └── requirements.txt         # Full dependencies
-├── frontend/            # React web interface
-│   ├── src/
-│   ├── public/
-│   └── package.json
-├── COOKIES.md          # YouTube cookie authentication guide
-├── README.md           # This file
-└── render.yaml         # Deployment configuration
-```
+FastScribe consists of four core processing modules and a Flask API server with React frontend:
 
-## Quick Start
+### Core Modules
 
-### Web Interface
+**urlScraper.py**  
+Handles YouTube URL parsing and validation. Extracts video IDs from various YouTube URL formats including standard watch URLs, shortened youtu.be links, and embed URLs. Returns standardized video identifiers for downstream processing.
 
-Visit the deployed site or run locally:
+**transcriber.py**  
+Downloads audio from YouTube videos using yt-dlp and transcribes them using OpenAI's Whisper API. This approach works for any video regardless of whether captions are available, providing high-quality transcriptions in multiple languages. Automatically handles audio extraction, format conversion, and cleanup of temporary files. Supports cookie-based authentication to bypass YouTube bot detection.
 
-```bash
-# Backend
-cd backend
-pip install -r requirements-server.txt
-python app.py
+**createNotes.py**  
+Generates structured study materials from transcripts using OpenAI's GPT-4. Processes raw transcript text into formatted notes with configurable output styles including flashcards (Q&A format), detailed notes, summaries, and bullet points. Integrates with the API key rotation system for load balancing.
 
-# Frontend (new terminal)
-cd frontend
-npm install
-npm start
-```
+**formatNotes.py**  
+Exports flashcards to Anki-compatible formats (CSV and TXT). Parses Q&A formatted notes into structured flashcard data and generates properly delimited files for import into Anki's spaced repetition system. Also includes optional Google Docs export functionality with lazy imports to avoid deployment issues.
 
-### Command Line
+**apiKeyCycler.py**  
+Thread-safe API key rotation manager that distributes OpenAI API requests across 50 hardcoded keys. Uses round-robin scheduling to prevent rate limiting on individual keys. Provides a global singleton instance for consistent key cycling across the application.
 
-```bash
-cd backend
-python main.py
-# Enter YouTube URL when prompted
-```
+### Web Application
 
-## Features
+**app.py**  
+Flask REST API server providing HTTP endpoints for the core processing pipeline. Exposes individual module functions as API routes and includes a complete end-to-end processing endpoint. Handles CORS for frontend integration and includes health check monitoring. Initializes the API key cycler on startup.
 
-- **Multi-language transcription** - 50+ languages via Whisper API
-- **Smart API key rotation** - Load balancing across multiple OpenAI keys
-- **Cookie authentication** - Bypass YouTube bot detection
-- **Anki export** - CSV and TXT formats ready for import
-- **Web interface** - Clean React UI with Tailwind CSS
-
-## How It Works
-
-1. **URL Parsing** - Extracts video ID from any YouTube URL format
-2. **Audio Download** - Uses yt-dlp to download audio from video
-3. **Transcription** - OpenAI Whisper API converts speech to text
-4. **Flashcard Generation** - GPT-4 creates Q&A pairs from transcript
-5. **Export** - Formats flashcards for Anki import
+**frontend/**  
+React application with Tailwind CSS styling. Single-page application that interfaces with the Flask API to provide a user-friendly web interface for generating flashcards. Features language selection dropdown, real-time processing feedback, and downloadable Anki exports. Users input YouTube URLs and receive flashcards without data persistence on the server.
 
 ## API Endpoints
 
@@ -89,15 +53,45 @@ git push origin main
 
 ### API Keys
 
-The system supports multiple OpenAI API keys for load balancing. Keys are hardcoded in `apiKeyCycler.py` or can be set via environment:
+The system supports multiple OpenAI API keys for load balancing. Keys are hardcoded in `backend/apiKeyCycler.py` or can be set via environment:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 ```
 
-### YouTube Cookies
+### YouTube Cookies for Production
 
-If you encounter "bot detection" errors, see [COOKIES.md](COOKIES.md) for authentication setup.
+For production deployment on Render, see [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for complete cookie setup instructions.
+
+**Quick summary:**
+1. Export cookies from your browser using "Get cookies.txt LOCALLY" extension
+2. Upload to Render as environment variable (base64) or secret file
+3. The app automatically detects and uses production cookies
+
+### Development Setup
+
+```bash
+# Backend
+cd backend
+pip install -r requirements-server.txt
+python app.py
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm start
+```
+
+## Deployment
+
+Configured for Render deployment. See `render.yaml` for configuration details.
+
+```bash
+git push origin main
+# Render auto-deploys both frontend and backend
+```
+
+Full deployment guide: [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)
 
 ## Technology Stack
 

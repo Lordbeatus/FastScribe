@@ -34,6 +34,7 @@ token.pickle
 # YouTube cookies (NEVER commit these!)
 cookies.txt
 *.cookies
+cookies_base64.txt
 
 # Generated files
 transcript_*.txt

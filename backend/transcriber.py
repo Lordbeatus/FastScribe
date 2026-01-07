@@ -93,6 +93,42 @@ class YouTubeTranscriber:
                 ydl_opts['cookiefile'] = 'cookies.txt'
                 print("Using cookies from cookies.txt")
             
+            # First, try to get video info to check if it's accessible
+            print("Checking video availability...")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                try:
+                    info = ydl.extract_info(url, download=False)
+                    
+                    # Check if video has any audio/video formats
+                    formats = info.get('formats', [])
+                    audio_formats = [f for f in formats if f.get('acodec') != 'none']
+                    
+                    if not audio_formats:
+                        # Check if it's a live stream, premiere, or unavailable
+                        if info.get('is_live'):
+                            raise Exception("Cannot transcribe live streams. Please wait until the stream is finished.")
+                        elif info.get('live_status') == 'is_upcoming':
+                            raise Exception("This video is a scheduled premiere that hasn't started yet. Please try again after it airs.")
+                        elif info.get('availability') in ['private', 'premium_only', 'subscriber_only']:
+                            raise Exception(f"This video is {info.get('availability')} and cannot be downloaded.")
+                        else:
+                            raise Exception("No audio formats available for this video. It may be restricted, deleted, or region-locked.")
+                    
+                    print(f"Video is accessible. Found {len(audio_formats)} audio formats.")
+                    
+                except yt_dlp.utils.DownloadError as e:
+                    error_msg = str(e)
+                    if "Private video" in error_msg:
+                        raise Exception("This is a private video and cannot be accessed.")
+                    elif "Video unavailable" in error_msg:
+                        raise Exception("This video is unavailable. It may have been deleted or restricted.")
+                    elif "Sign in" in error_msg or "not a bot" in error_msg:
+                        raise Exception("YouTube is blocking this request. Please configure cookies authentication. See COOKIES.md for setup instructions.")
+                    else:
+                        raise Exception(f"Cannot access video: {error_msg}")
+            
+            # Now download the audio
+            print("Downloading audio...")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
             

@@ -5,6 +5,7 @@ Takes transcript and creates structured notes
 
 import os
 from openai import OpenAI
+from apiKeyCycler import get_next_api_key
 
 
 class NotesCreator:
@@ -14,12 +15,10 @@ class NotesCreator:
         """
         Initialize with OpenAI API key
         Args:
-            api_key: OpenAI API key (or set OPENAI_API_KEY environment variable)
+            api_key: OpenAI API key (or uses cycler if not provided)
         """
-        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
-        if not self.api_key:
-            raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
-        
+        # Use provided key or get next from cycler
+        self.api_key = api_key or get_next_api_key()
         self.client = OpenAI(api_key=self.api_key)
         self.notes = None
     

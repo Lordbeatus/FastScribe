@@ -11,12 +11,18 @@ from urlScraper import YouTubeURLScraper
 from transcriber import YouTubeTranscriber
 from createNotes import NotesCreator
 from formatNotes import NotesFormatter
+from apiKeyCycler import get_api_key_cycler, get_next_api_key
 
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
-API_KEY = os.getenv('OPENAI_API_KEY')
+# Initialize API key cycler
+try:
+    cycler = get_api_key_cycler()
+    print(f"Using {cycler.get_key_count()} API keys in rotation")
+except Exception as e:
+    print(f"Warning: API key cycler initialization: {e}")
+    cycler = None
 
 
 @app.route('/api/health', methods=['GET'])
@@ -25,7 +31,7 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'service': 'FastScribe API',
-        'openai_configured': bool(API_KEY)
+        'api_keys_available': cycler.get_key_count() if cycler else 0
     })
 
 
@@ -64,20 +70,22 @@ def transcribe_video():
         data = request.get_json()
         url = data.get('url')
         language = data.get('language')  # Optional language code
+        cookies_from_browser = data.get('cookies_from_browser')  # Optional: 'chrome', 'firefox', etc.
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
-        
-        if not API_KEY:
-            return jsonify({'error': 'OpenAI API key not configured'}), 500
         
         # Extract video ID
         scraper = YouTubeURLScraper()
         video_id = scraper.extract_video_id(url)
         
-        # Get transcript using Whisper
-        transcriber = YouTubeTranscriber(api_key=API_KEY)
-        transcript_text = transcriber.get_transcript(video_id, language=language)
+        # Get transcript using Whisper (cycler handles API key)
+        transcriber = YouTubeTranscriber()
+        transcript_text = transcriber.get_transcript(
+            video_id, 
+            language=language,
+            cookies_from_browser=cookies_from_browser
+        )
         
         return jsonify({
             'video_id': video_id,
@@ -103,11 +111,8 @@ def create_flashcards():
         if not API_KEY:
             return jsonify({'error': 'OpenAI API key not configured'}), 500
         
-        # Create notes
-        creator = NotesCreator(api_key=API_KEY)
-        notes = creator.create_notes(transcript, style=style)
-        
-        # Parse into flashcards
+        # Create notes (cycler handles API key)
+        creator = NotesCreator(
         formatter = NotesFormatter()
         flashcards = formatter.parse_flashcards(notes)
         
@@ -168,7 +173,6 @@ def process_complete():
         url = data.get('url')
         style = data.get('style', 'flashcards')
         language = data.get('language')  # Optional language code
-        cookies_from_browser = data.get('cookies_from_browser')  # Optional
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
@@ -179,23 +183,16 @@ def process_complete():
         # Step 1: Validate URL
         scraper = YouTubeURLScraper()
         video_id = scraper.extract_video_id(url)
+        # Step 1: Validate URL
+        scraper = YouTubeURLScraper()
+        video_id = scraper.extract_video_id(url)
         
-        # Step 2: Get transcript using Whisper
-        transcriber = YouTubeTranscriber(api_key=API_KEY)
-        formatted_text = transcriber.get_transcript(
-            video_id, 
-            language=language,
-            cookies_from_browser=cookies_from_browser
-        )
+        # Step 2: Get transcript using Whisper (cycler handles API key)
+        transcriber = YouTubeTranscriber()
+        formatted_text = transcriber.get_transcript(video_id, language=language)
         
-        # Step 3: Create flashcards
-        creator = NotesCreator(api_key=API_KEY)
-        notes = creator.create_notes(formatted_text, style=style)
-        
-        # Step 4: Parse flashcards
-        formatter = NotesFormatter()
-        flashcards = formatter.parse_flashcards(notes)
-        
+        # Step 3: Create flashcards (cycler handles API key)
+        creator = NotesCreator(
         return jsonify({
             'video_id': video_id,
             'transcript': formatted_text,

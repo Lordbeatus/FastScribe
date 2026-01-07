@@ -34,13 +34,12 @@ def run_full_pipeline(youtube_url, export_to_google_docs=False):
         return
     
     # Step 2: Get transcript
-    print("\n[2/5] Downloading transcript...")
+    print("\n[2/5] Downloading and transcribing audio with Whisper...")
     transcriber = YouTubeTranscriber()
     try:
-        transcript = transcriber.get_transcript(video_id)
-        formatted_transcript = transcriber.format_transcript(include_timestamps=False)
+        formatted_transcript = transcriber.get_transcript(video_id)
         transcriber.save_transcript(f"transcript_{video_id}.txt")
-        print(f"✓ Transcript downloaded ({len(transcript)} segments)")
+        print(f"✓ Transcription complete")
         print(f"✓ Preview: {formatted_transcript[:150]}...")
     except Exception as e:
         print(f"✗ Error: {e}")

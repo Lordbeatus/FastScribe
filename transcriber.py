@@ -1,94 +1,111 @@
 """
-YouTube Video Transcriber
-Downloads and formats transcripts from YouTube videos
+YouTube Video Transcriber using yt-dlp and OpenAI Whisper
+Downloads audio and transcribes using OpenAI's Whisper API
 """
 
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+import os
+import tempfile
+import yt_dlp
+from openai import OpenAI
 from urlScraper import YouTubeURLScraper
 
 
 class YouTubeTranscriber:
-    """Transcribe YouTube videos"""
+    """Transcribe YouTube videos using Whisper API"""
     
-    def __init__(self):
+    def __init__(self, api_key=None):
         self.transcript = None
         self.formatted_text = None
         self.video_id = None
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
+        self.client = OpenAI(api_key=self.api_key)
     
     def get_transcript(self, url_or_video_id):
         """
-        Get transcript from YouTube video
+        Get transcript from YouTube video using yt-dlp and Whisper
         Args:
             url_or_video_id: YouTube URL or video ID
         Returns:
-            List of transcript segments
+            Transcript text
         """
         # Check if input is a URL or video ID
         if url_or_video_id.startswith('http'):
             scraper = YouTubeURLScraper()
             self.video_id = scraper.extract_video_id(url_or_video_id)
+            url = scraper.get_standard_url()
         else:
             self.video_id = url_or_video_id
+            url = f"https://www.youtube.com/watch?v={url_or_video_id}"
+        
+        # Create temporary directory for audio file
+        temp_dir = tempfile.mkdtemp()
+        audio_file = os.path.join(temp_dir, f"{self.video_id}.mp3")
         
         try:
-            # Get transcript list for the video
-            api = YouTubeTranscriptApi()
-            transcript_list = api.list(self.video_id)
+            # Download audio using yt-dlp
+            print(f"Downloading audio from video: {self.video_id}")
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'outtmpl': os.path.join(temp_dir, f"{self.video_id}.%(ext)s"),
+                'quiet': True,
+                'no_warnings': True,
+            }
             
-            # Try to get English transcript first
-            try:
-                transcript_obj = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
-                self.transcript = transcript_obj.fetch()
-                return self.transcript
-            except:
-                # If no English, get the first available transcript
-                transcript_obj = transcript_list.find_generated_transcript(['en'])
-                self.transcript = transcript_obj.fetch()
-                return self.transcript
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            
+            print(f"Audio downloaded. Transcribing with Whisper...")
+            
+            # Transcribe using OpenAI Whisper API
+            with open(audio_file, 'rb') as audio:
+                transcript_response = self.client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio,
+                    response_format="text"
+                )
+            
+            self.formatted_text = transcript_response
+            print(f"Transcription complete!")
+            
+            return self.formatted_text
         
-        except TranscriptsDisabled:
-            raise Exception(f"Transcripts are disabled for video: {self.video_id}")
-        
-        except NoTranscriptFound:
-            raise Exception(f"No transcript found for video: {self.video_id}")
         except Exception as e:
-            raise Exception(f"Error fetching transcript: {str(e)}")
+            raise Exception(f"Error transcribing video: {str(e)}")
+        
+        finally:
+            # Clean up temporary files
+            try:
+                if os.path.exists(audio_file):
+                    os.remove(audio_file)
+                os.rmdir(temp_dir)
+            except:
+                pass
     
     def format_transcript(self, include_timestamps=False):
         """
         Format transcript into readable text
+        Note: Whisper API doesn't provide timestamps in basic mode
         Args:
-            include_timestamps: Include timestamps in output
+            include_timestamps: Not supported in this version
         Returns:
             Formatted transcript string
         """
-        if not self.transcript:
+        if not self.formatted_text:
             raise ValueError("No transcript available. Call get_transcript first.")
-        
-        if include_timestamps:
-            formatted = []
-            for entry in self.transcript:
-                timestamp = self._format_timestamp(entry['start'])
-                text = entry['text']
-                formatted.append(f"[{timestamp}] {text}")
-            self.formatted_text = '\n'.join(formatted)
-        else:
-            # Join all text segments
-            self.formatted_text = ' '.join([entry['text'] for entry in self.transcript])
         
         return self.formatted_text
     
-    def _format_timestamp(self, seconds):
-        """Convert seconds to MM:SS format"""
-        minutes = int(seconds // 60)
-        secs = int(seconds % 60)
-        return f"{minutes:02d}:{secs:02d}"
-    
-    def save_transcript(self, filename, include_timestamps=False):
+    def save_transcript(self, filename):
         """Save transcript to file"""
         if not self.formatted_text:
-            self.format_transcript(include_timestamps)
+            raise ValueError("No transcript available. Call get_transcript first.")
         
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(self.formatted_text)
@@ -104,11 +121,10 @@ def main():
     url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     
     try:
-        transcript = transcriber.get_transcript(url)
-        formatted_text = transcriber.format_transcript(include_timestamps=False)
+        transcript_text = transcriber.get_transcript(url)
         
         print("Transcript preview:")
-        print(formatted_text[:500] + "...")
+        print(transcript_text[:500] + "...")
         
         # Save to file
         transcriber.save_transcript("transcript.txt")

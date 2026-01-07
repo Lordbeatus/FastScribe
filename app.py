@@ -59,28 +59,28 @@ def validate_url():
 
 @app.route('/api/transcribe', methods=['POST'])
 def transcribe_video():
-    """Get transcript from YouTube video"""
+    """Get transcript from YouTube video using Whisper"""
     try:
         data = request.get_json()
         url = data.get('url')
-        include_timestamps = data.get('include_timestamps', False)
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
+        
+        if not API_KEY:
+            return jsonify({'error': 'OpenAI API key not configured'}), 500
         
         # Extract video ID
         scraper = YouTubeURLScraper()
         video_id = scraper.extract_video_id(url)
         
-        # Get transcript
-        transcriber = YouTubeTranscriber()
-        transcript = transcriber.get_transcript(video_id)
-        formatted_text = transcriber.format_transcript(include_timestamps)
+        # Get transcript using Whisper
+        transcriber = YouTubeTranscriber(api_key=API_KEY)
+        transcript_text = transcriber.get_transcript(video_id)
         
         return jsonify({
             'video_id': video_id,
-            'transcript': formatted_text,
-            'segment_count': len(transcript)
+            'transcript': transcript_text
         })
     
     except Exception as e:
@@ -176,10 +176,9 @@ def process_complete():
         scraper = YouTubeURLScraper()
         video_id = scraper.extract_video_id(url)
         
-        # Step 2: Get transcript
-        transcriber = YouTubeTranscriber()
-        transcript = transcriber.get_transcript(video_id)
-        formatted_text = transcriber.format_transcript(include_timestamps=False)
+        # Step 2: Get transcript using Whisper
+        transcriber = YouTubeTranscriber(api_key=API_KEY)
+        formatted_text = transcriber.get_transcript(video_id)
         
         # Step 3: Create flashcards
         creator = NotesCreator(api_key=API_KEY)

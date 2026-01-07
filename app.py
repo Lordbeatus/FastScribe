@@ -70,6 +70,7 @@ def transcribe_video():
         data = request.get_json()
         url = data.get('url')
         language = data.get('language')  # Optional language code
+        cookies_from_browser = data.get('cookies_from_browser')  # Optional: 'chrome', 'firefox', etc.
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
@@ -80,7 +81,11 @@ def transcribe_video():
         
         # Get transcript using Whisper (cycler handles API key)
         transcriber = YouTubeTranscriber()
-        transcript_text = transcriber.get_transcript(video_id, language=language)
+        transcript_text = transcriber.get_transcript(
+            video_id, 
+            language=language,
+            cookies_from_browser=cookies_from_browser
+        )
         
         return jsonify({
             'video_id': video_id,

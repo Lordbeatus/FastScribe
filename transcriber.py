@@ -22,13 +22,15 @@ class YouTubeTranscriber:
         self.api_key = api_key or get_next_api_key()
         self.client = OpenAI(api_key=self.api_key)
     
-    def get_transcript(self, url_or_video_id, language=None):
+    def get_transcript(self, url_or_video_id, language=None, cookies_from_browser=None, cookies_file=None):
         """
         Get transcript from YouTube video using yt-dlp and Whisper
         Args:
             url_or_video_id: YouTube URL or video ID
             language: Optional ISO-639-1 language code (e.g., 'en', 'es', 'fr', 'de', 'ja', 'zh')
                      If None, Whisper will auto-detect the language
+            cookies_from_browser: Browser to extract cookies from (e.g., 'chrome', 'firefox', 'edge')
+            cookies_file: Path to cookies.txt file in Netscape format
         Returns:
             Transcript text
         """
@@ -63,6 +65,18 @@ class YouTubeTranscriber:
                 'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
                 'nocheckcertificate': True,
             }
+            
+            # Add cookie options if provided
+            if cookies_from_browser:
+                ydl_opts['cookiesfrombrowser'] = (cookies_from_browser,)
+                print(f"Using cookies from browser: {cookies_from_browser}")
+            elif cookies_file and os.path.exists(cookies_file):
+                ydl_opts['cookiefile'] = cookies_file
+                print(f"Using cookies from file: {cookies_file}")
+            elif os.path.exists('cookies.txt'):
+                # Check for default cookies.txt in current directory
+                ydl_opts['cookiefile'] = 'cookies.txt'
+                print("Using cookies from cookies.txt")
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])

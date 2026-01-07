@@ -31,6 +31,10 @@ wheels/
 credentials.json
 token.pickle
 
+# YouTube cookies (NEVER commit these!)
+cookies.txt
+*.cookies
+
 # Generated files
 transcript_*.txt
 notes_*.txt

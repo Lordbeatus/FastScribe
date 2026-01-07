@@ -4,11 +4,6 @@ Format Notes for Anki and Google Docs Export
 
 import os
 import csv
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-import pickle
 
 
 class NotesFormatter:
@@ -115,6 +110,17 @@ class NotesFormatter:
         Args:
             credentials_file: Path to Google OAuth credentials JSON
         """
+        try:
+            from google.oauth2.credentials import Credentials
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            from google.auth.transport.requests import Request
+            import pickle
+        except ImportError:
+            raise ImportError(
+                "Google API libraries not installed. "
+                "Install with: pip install google-api-python-client google-auth-oauthlib"
+            )
+        
         SCOPES = ['https://www.googleapis.com/auth/documents', 
                   'https://www.googleapis.com/auth/drive.file']
         
@@ -158,6 +164,14 @@ class NotesFormatter:
         """
         if not self.google_creds:
             raise ValueError("Google Docs not authenticated. Call setup_google_docs_auth first.")
+        
+        try:
+            from googleapiclient.discovery import build
+        except ImportError:
+            raise ImportError(
+                "Google API libraries not installed. "
+                "Install with: pip install google-api-python-client"
+            )
         
         try:
             # Build the Docs API service

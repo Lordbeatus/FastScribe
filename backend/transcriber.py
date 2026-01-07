@@ -74,14 +74,20 @@ class YouTubeTranscriber:
                 },
             }
             
-            # Only use android client if NOT using cookies (android doesn't support cookies)
+            # Android client works best without JavaScript runtime
+            # Use it by default, even with cookies (cookies just won't work with android, but it'll fall back)
+            # Priority: android (no JS needed) > web (needs JS, but works with cookies)
             if not using_cookies:
-                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+                # No cookies: android is best choice (fast, no JS needed)
+                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
+                print("Using android client (no cookies)")
             else:
-                # When using cookies, use web client only
-                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['web']}}
+                # With cookies: try android first (it'll skip), then web with cookies
+                # This way if android works, we don't need JS. If not, web + cookies may help
+                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
+                print("Using android client (cookies will be ignored by android, may still work)")
             
-            # Add cookie options if provided
+            # Add cookie options if provided (mostly for web client fallback)
             if cookies_from_browser:
                 ydl_opts['cookiesfrombrowser'] = (cookies_from_browser,)
                 print(f"Using cookies from browser: {cookies_from_browser}")

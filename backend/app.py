@@ -168,6 +168,7 @@ def process_complete():
         url = data.get('url')
         style = data.get('style', 'flashcards')
         language = data.get('language')  # Optional language code
+        cookies_from_browser = data.get('cookies_from_browser')  # Optional
         
         if not url:
             return jsonify({'error': 'URL is required'}), 400
@@ -181,7 +182,11 @@ def process_complete():
         
         # Step 2: Get transcript using Whisper
         transcriber = YouTubeTranscriber(api_key=API_KEY)
-        formatted_text = transcriber.get_transcript(video_id, language=language)
+        formatted_text = transcriber.get_transcript(
+            video_id, 
+            language=language,
+            cookies_from_browser=cookies_from_browser
+        )
         
         # Step 3: Create flashcards
         creator = NotesCreator(api_key=API_KEY)

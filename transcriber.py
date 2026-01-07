@@ -32,24 +32,27 @@ class YouTubeTranscriber:
             self.video_id = url_or_video_id
         
         try:
-            # Get transcript (prefer English)
-            self.transcript = YouTubeTranscriptApi.get_transcript(
-                self.video_id,
-                languages=['en', 'en-US', 'en-GB']
-            )
-            return self.transcript
+            # Get transcript list for the video
+            transcript_list = YouTubeTranscriptApi.list(self.video_id)
+            
+            # Try to get English transcript first
+            try:
+                transcript_obj = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
+                self.transcript = transcript_obj.fetch()
+                return self.transcript
+            except:
+                # If no English, get the first available transcript
+                transcript_obj = transcript_list.find_generated_transcript(['en'])
+                self.transcript = transcript_obj.fetch()
+                return self.transcript
         
         except TranscriptsDisabled:
             raise Exception(f"Transcripts are disabled for video: {self.video_id}")
         
         except NoTranscriptFound:
-            # Try to get any available transcript
-            try:
-                transcript_list = YouTubeTranscriptApi.list_transcripts(self.video_id)
-                self.transcript = transcript_list.find_transcript(['en']).fetch()
-                return self.transcript
-            except:
-                raise Exception(f"No transcript found for video: {self.video_id}")
+            raise Exception(f"No transcript found for video: {self.video_id}")
+        except Exception as e:
+            raise Exception(f"Error fetching transcript: {str(e)}")
     
     def format_transcript(self, include_timestamps=False):
         """

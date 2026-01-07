@@ -51,19 +51,25 @@ class YouTubeTranscriber:
             # Download audio using yt-dlp
             print(f"Downloading audio from video: {self.video_id}")
             ydl_opts = {
-                'format': 'bestaudio/best',
+                'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
                     'preferredquality': '192',
                 }],
                 'outtmpl': os.path.join(temp_dir, f"{self.video_id}.%(ext)s"),
-                'quiet': True,
-                'no_warnings': True,
+                'quiet': False,
+                'no_warnings': False,
                 'extract_flat': False,
                 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
                 'nocheckcertificate': True,
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-us,en;q=0.5',
+                    'Sec-Fetch-Mode': 'navigate',
+                },
             }
             
             # Add cookie options if provided

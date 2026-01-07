@@ -60,7 +60,7 @@ def get_api_key_cycler(api_keys=None):
         else:
             # Try to load predefined keys
             predefined_keys = [
-                'sk-abcdef1234567890abcdef1234567890abcdef12',
+                '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',
                 'sk-1234567890abcdef1234567890abcdef12345678',
                 'sk-abcdefabcdefabcdefabcdefabcdefabcdef12',
                 'sk-7890abcdef7890abcdef7890abcdef7890abcd',

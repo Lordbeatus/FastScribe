@@ -36,9 +36,19 @@ if os.getenv('YOUTUBE_COOKIES_BASE64'):
         print(f"⚠ Failed to decode cookies from environment: {e}")
 
 elif os.path.exists('/etc/secrets/cookies.txt'):
-    # Use Render secret file
-    COOKIES_PATH = '/etc/secrets/cookies.txt'
-    print(f"✓ Using cookies from secret file")
+    # Copy Render secret file to temp location (secret files are read-only)
+    try:
+        with open('/etc/secrets/cookies.txt', 'r') as f:
+            cookies_data = f.read()
+        
+        # Write to writable temp file
+        temp_cookies = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
+        temp_cookies.write(cookies_data)
+        temp_cookies.close()
+        COOKIES_PATH = temp_cookies.name
+        print(f"✓ Using cookies from secret file (copied to {COOKIES_PATH})")
+    except Exception as e:
+        print(f"⚠ Failed to copy cookies from secret file: {e}")
 
 elif os.path.exists('cookies.txt'):
     # Use local cookies.txt for development

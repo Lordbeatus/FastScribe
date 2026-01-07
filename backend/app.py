@@ -14,6 +14,15 @@ from createNotes import NotesCreator
 from formatNotes import NotesFormatter
 from apiKeyCycler import get_api_key_cycler, get_next_api_key
 
+# Import free solution components
+try:
+    from local_whisper import LocalWhisperTranscriber
+    from copilot_flashcard_generator import CopilotFlashcardGenerator
+    COPILOT_AVAILABLE = True
+except ImportError:
+    COPILOT_AVAILABLE = False
+    print("⚠ Copilot API integration not available (missing dependencies)")
+
 app = Flask(__name__)
 CORS(app)
 
@@ -261,6 +270,75 @@ def process_complete():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/process-free', methods=['POST'])
+def process_free():
+    """
+    Free processing pipeline using local Whisper + Copilot API
+    100% free - no OpenAI API needed!
+    """
+    if not COPILOT_AVAILABLE:
+        return jsonify({
+            'error': 'Free processing not available. Missing dependencies (whisper, copilot-api)'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        url = data.get('url')
+        language = data.get('language', 'English')
+        
+        if not url:
+            return jsonify({'error': 'URL is required'}), 400
+        
+        # Step 1: Validate URL
+        scraper = YouTubeURLScraper()
+        video_id = scraper.extract_video_id(url)
+        
+        # Step 2: Download audio
+        from urlScraper import download_audio
+        temp_dir = tempfile.mkdtemp()
+        audio_path = download_audio(url, output_dir=temp_dir)
+        
+        # Step 3: Transcribe with local Whisper
+        whisper = LocalWhisperTranscriber(model_size="base")
+        lang_code = _language_to_code(language)
+        transcript = whisper.transcribe(audio_path, language=lang_code)
+        
+        # Step 4: Generate flashcards with Copilot API
+        copilot = CopilotFlashcardGenerator(copilot_api_url="http://localhost:8080/api")
+        flashcards = copilot.generate_flashcards(transcript, language=language)
+        
+        # Cleanup
+        try:
+            os.remove(audio_path)
+            os.rmdir(temp_dir)
+        except:
+            pass
+        
+        return jsonify({
+            'video_id': video_id,
+            'transcript': transcript,
+            'flashcards': flashcards,
+            'count': len(flashcards),
+            'language': language,
+            'cost': '$0.00',
+            'method': 'local-whisper + copilot-api'
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def _language_to_code(language):
+    """Convert language name to ISO code"""
+    language_map = {
+        'English': 'en', 'Spanish': 'es', 'French': 'fr',
+        'German': 'de', 'Italian': 'it', 'Portuguese': 'pt',
+        'Russian': 'ru', 'Japanese': 'ja', 'Korean': 'ko',
+        'Chinese': 'zh', 'Arabic': 'ar', 'Hindi': 'hi'
+    }
+    return language_map.get(language, 'en')
 
 
 if __name__ == '__main__':

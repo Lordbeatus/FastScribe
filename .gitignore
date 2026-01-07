@@ -36,6 +36,18 @@ cookies.txt
 *.cookies
 cookies_base64.txt
 
+# Copilot API (cloned during build, don't commit)
+copilot-api/
+.copilot_token
+
+# Test files
+test_transcript.txt
+test_transcript_flashcards.csv
+test_copilot_api.py
+
+# Output directory
+output/
+
 # Generated files
 transcript_*.txt
 notes_*.txt

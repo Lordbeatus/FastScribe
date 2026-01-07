@@ -2,13 +2,18 @@ services:
   - type: web
     name: fastscribe-api
     env: python
-    buildCommand: cd backend && pip install -r requirements-server.txt
-    startCommand: cd backend && gunicorn app:app
+    buildCommand: |
+      pip install -r backend/requirements-server.txt
+      git clone https://github.com/B00TK1D/copilot-api.git
+      cd copilot-api && pip install -r requirements.txt
+    startCommand: bash start.sh
     envVars:
-      - key: OPENAI_API_KEY
+      - key: COPILOT_TOKEN
         sync: false
       - key: FLASK_ENV
         value: production
+      - key: PORT
+        value: 10000
   
   - type: web
     name: fastscribe-frontend

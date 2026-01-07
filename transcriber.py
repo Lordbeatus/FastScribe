@@ -33,7 +33,8 @@ class YouTubeTranscriber:
         
         try:
             # Get transcript list for the video
-            transcript_list = YouTubeTranscriptApi.list(self.video_id)
+            api = YouTubeTranscriptApi()
+            transcript_list = api.list(self.video_id)
             
             # Try to get English transcript first
             try:

@@ -75,19 +75,20 @@ class YouTubeTranscriber:
             }
             
             # Android client works best without JavaScript runtime
-            # Use it by default, even with cookies (cookies just won't work with android, but it'll fall back)
-            # Priority: android (no JS needed) > web (needs JS, but works with cookies)
+            # BUT android doesn't support cookies, so only use it when we DON'T have cookies
             if not using_cookies:
                 # No cookies: android is best choice (fast, no JS needed)
                 ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
                 print("Using android client (no cookies)")
             else:
-                # With cookies: try android first (it'll skip), then web with cookies
-                # This way if android works, we don't need JS. If not, web + cookies may help
-                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
-                print("Using android client (cookies will be ignored by android, may still work)")
+                # With cookies: we MUST skip android and accept that web client needs JS runtime
+                # This will only work in environments with Node.js or where videos don't trigger JS challenges
+                print("WARNING: Using web client with cookies - requires JavaScript runtime")
+                print("If this fails, remove cookies to use android client instead")
+                # Don't set player_client at all - let yt-dlp use default with cookies
+                # ydl_opts['extractor_args'] = {'youtube': {'player_client': ['web']}}
             
-            # Add cookie options if provided (mostly for web client fallback)
+            # Add cookie options if provided
             if cookies_from_browser:
                 ydl_opts['cookiesfrombrowser'] = (cookies_from_browser,)
                 print(f"Using cookies from browser: {cookies_from_browser}")

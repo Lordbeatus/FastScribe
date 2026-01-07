@@ -8,7 +8,6 @@ import tempfile
 import yt_dlp
 from openai import OpenAI
 from urlScraper import YouTubeURLScraper
-from apiKeyCycler import get_next_api_key
 
 
 class YouTubeTranscriber:
@@ -18,8 +17,9 @@ class YouTubeTranscriber:
         self.transcript = None
         self.formatted_text = None
         self.video_id = None
-        # Use provided key or get next from cycler
-        self.api_key = api_key or get_next_api_key()
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass api_key parameter.")
         self.client = OpenAI(api_key=self.api_key)
     
     def get_transcript(self, url_or_video_id, language=None):

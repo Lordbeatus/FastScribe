@@ -1,72 +1,169 @@
-# FastScribe
+# 🎓 FastScribe - YouTube to Anki Flashcards
 
-FastScribe is an automated system that converts YouTube videos into Anki flashcards using OpenAI's Whisper and GPT-4. The application downloads audio from YouTube videos, transcribes them using Whisper API, and generates study materials formatted for Anki's spaced repetition system. Both command-line and web interfaces are provided.
+> Transform YouTube videos into Anki flashcards automatically. **FREE mode** for students with GitHub Copilot!
 
-## Architecture
+## 🌟 Features
 
-FastScribe consists of four core processing modules and a Flask API server with React frontend:
+- 🎬 **YouTube Integration** - Works with any YouTube video
+- 🎙️ **Accurate Transcription** - Whisper API or local Whisper
+- 🤖 **AI-Powered Flashcards** - GPT-4 via OpenAI API or GitHub Copilot (FREE!)
+- 📚 **Anki Export** - Ready-to-import CSV format
+- 🌐 **Web Interface** - User-friendly React frontend
+- 🔒 **Secure** - API keys in environment variables only
+- 💰 **Cost Options** - FREE mode ($0/month) or API mode (~$8-15/month)
 
-### Core Modules
+## 💸 Two Modes
 
-**urlScraper.py**  
-Handles YouTube URL parsing and validation. Extracts video IDs from various YouTube URL formats including standard watch URLs, shortened youtu.be links, and embed URLs. Returns standardized video identifiers for downstream processing.
+### FREE Mode (Recommended for Students)
+- ✅ Local Whisper transcription ($0)
+- ✅ GitHub Copilot API for flashcards ($0)
+- ✅ Unlimited usage
+- ✅ **Total: $0/month**
+- ⚡ Requires GitHub Copilot Pro (free for students)
 
-**transcriber.py**  
-Downloads audio from YouTube videos using yt-dlp and transcribes them using OpenAI's Whisper API. This approach works for any video regardless of whether captions are available, providing high-quality transcriptions in multiple languages. Automatically handles audio extraction, format conversion, and cleanup of temporary files. Supports cookie-based authentication to bypass YouTube bot detection.
+### API Mode (Faster)
+- ✅ OpenAI Whisper API (~$0.006/min)
+- ✅ OpenAI GPT-4 API (~$0.01-0.03/request)
+- ✅ Faster processing
+- ⚡ Requires OpenAI API key
+- 💰 **Total: ~$8-15/month**
 
-**createNotes.py**  
-Generates structured study materials from transcripts using OpenAI's GPT-4. Processes raw transcript text into formatted notes with configurable output styles including flashcards (Q&A format), detailed notes, summaries, and bullet points. Integrates with the API key rotation system for load balancing.
+## 🚀 Quick Start
 
-**formatNotes.py**  
-Exports flashcards to Anki-compatible formats (CSV and TXT). Parses Q&A formatted notes into structured flashcard data and generates properly delimited files for import into Anki's spaced repetition system. Also includes optional Google Docs export functionality with lazy imports to avoid deployment issues.
+### Option 1: FREE Mode (Students)
 
-**apiKeyCycler.py**  
-Thread-safe API key rotation manager that distributes OpenAI API requests across 50 hardcoded keys. Uses round-robin scheduling to prevent rate limiting on individual keys. Provides a global singleton instance for consistent key cycling across the application.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Lordbeatus/FastScribe.git
+   cd FastScribe
+   ```
 
-### Web Application
+2. **Get your Copilot token** (see [COPILOT_API_SETUP.md](COPILOT_API_SETUP.md))
 
-**app.py**  
-Flask REST API server providing HTTP endpoints for the core processing pipeline. Exposes individual module functions as API routes and includes a complete end-to-end processing endpoint. Handles CORS for frontend integration and includes health check monitoring. Initializes the API key cycler on startup.
+3. **Deploy to Render** (see [QUICK_DEPLOY.md](QUICK_DEPLOY.md))
+   - Add `COPILOT_TOKEN` environment variable
+   - Push to GitHub
+   - Auto-deploys!
 
-**frontend/**  
-React application with Tailwind CSS styling. Single-page application that interfaces with the Flask API to provide a user-friendly web interface for generating flashcards. Features language selection dropdown, real-time processing feedback, and downloadable Anki exports. Users input YouTube URLs and receive flashcards without data persistence on the server.
+### Option 2: API Mode
 
-## API Endpoints
+1. **Set up OpenAI API key**
+   ```bash
+   export OPENAI_API_KEY="sk-your-key-here"
+   ```
 
+2. **Deploy to Render**
+   - Add `OPENAI_API_KEY` environment variable
+   - Push to GitHub
+
+## 📁 Repository Structure
+
+```
+FastScribe/
+├── backend/                    # Flask API server
+│   ├── app.py                 # Main server (both modes)
+│   ├── apiKeyCycler.py        # API key management
+│   ├── copilot_flashcard_generator.py  # FREE mode
+│   ├── local_whisper.py       # FREE mode transcription
+│   ├── transcriber.py         # API mode transcription
+│   ├── createNotes.py         # API mode flashcards
+│   ├── formatNotes.py         # Anki formatting
+│   └── urlScraper.py          # YouTube URL handling
+├── frontend/                   # React web app
+├── ARCHITECTURE.md            # System design & security
+├── QUICK_DEPLOY.md            # Deployment guide
+└── RENDER_COPILOT_SETUP.md    # Copilot setup guide
+```
+
+## 🔌 API Endpoints
+
+### FREE Mode
+- `POST /api/process-free` - Full pipeline using Copilot API ($0)
+
+### API Mode
+- `POST /api/process-complete` - Full pipeline using OpenAI APIs
+- `POST /api/transcribe` - Transcribe only
+- `POST /api/create-flashcards` - Generate flashcards only
+- `POST /api/export-anki` - Format for Anki
+
+### Utilities
 - `POST /api/validate-url` - Validate YouTube URL
-- `POST /api/transcribe` - Transcribe video with Whisper
-- `POST /api/create-flashcards` - Generate flashcards with GPT-4
-- `POST /api/export-anki` - Format for Anki export
-- `POST /api/process-complete` - Full pipeline (URL → flashcards)
-- `GET /api/health` - Server health check
+- `GET /` - Health check
 
-## Deployment
+## 🔐 Security
 
-Configured for Render deployment. See `render.yaml` for details.
+✅ **Your API key is safe!**
 
+- All keys in **environment variables only**
+- No hardcoded keys in code
+- `.gitignore` prevents committing secrets
+- Render encrypts environment variables
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for complete security review.
+
+## 📖 Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system design, security review, and how it works
+- **[QUICK_DEPLOY.md](QUICK_DEPLOY.md)** - Deploy in 3 steps
+- **[RENDER_COPILOT_SETUP.md](RENDER_COPILOT_SETUP.md)** - Detailed Copilot setup
+- **[COPILOT_API_SETUP.md](COPILOT_API_SETUP.md)** - Local testing guide
+
+## 🧪 Testing
+
+### Test FREE Mode Locally
 ```bash
-git push origin main
-# Render auto-deploys both frontend and backend
+# Start copilot-api
+cd copilot-api && python api.py 8080
+
+# In new terminal, start Flask
+cd backend && python app.py
+
+# Test
+curl -X POST http://localhost:5000/api/process-free \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://youtube.com/watch?v=VIDEO_ID", "language": "English"}'
 ```
 
-## Configuration
-
-### API Keys
-
-The system supports multiple OpenAI API keys for load balancing. Keys are hardcoded in `backend/apiKeyCycler.py` or can be set via environment:
-
+### Test on Render
 ```bash
-export OPENAI_API_KEY="sk-..."
+curl -X POST https://fastscribe-4nzr.onrender.com/api/process-free \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://youtube.com/watch?v=VIDEO_ID", "language": "English"}'
 ```
 
-### YouTube Cookies for Production
+## 💰 Cost Breakdown
 
-For production deployment on Render, see [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for complete cookie setup instructions.
+| Feature | FREE Mode | API Mode |
+|---------|-----------|----------|
+| Transcription | Local Whisper | OpenAI Whisper API |
+| Flashcards | Copilot API | OpenAI GPT-4 |
+| Per Video | $0.00 | ~$0.08 |
+| 100 videos/month | **$0.00** | ~$8.00 |
+| Hosting | Render Free | Render Free |
+| **Total** | **$0.00/month** | **~$8-15/month** |
 
-**Quick summary:**
-1. Export cookies from your browser using "Get cookies.txt LOCALLY" extension
-2. Upload to Render as environment variable (base64) or secret file
-3. The app automatically detects and uses production cookies
+## 🎓 Perfect for Students
+
+- ✅ 100% free with GitHub Copilot Pro (free for students)
+- ✅ Unlimited flashcard generation
+- ✅ No credit card required
+- ✅ Cloud-hosted (accessible anywhere)
+- ✅ Professional-grade GPT-4 quality
+
+## 🤝 Contributing
+
+Pull requests welcome! Please ensure:
+- No hardcoded API keys
+- Update documentation
+- Test both FREE and API modes
+
+## 📝 License
+
+MIT License - Free to use for students and educators
+
+---
+
+**Made with ❤️ for students who want free, automated study tools!**
 
 ### Development Setup
 

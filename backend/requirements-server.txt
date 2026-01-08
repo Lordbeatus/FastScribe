@@ -1,12 +1,18 @@
+# Flask Web Server
 flask>=3.0.0
 flask-cors>=4.0.0
-yt-dlp>=2024.0.0
 gunicorn>=21.0.0
 python-dotenv>=1.0.0
 
-# Local AI models (no API keys needed)
+# YouTube Processing
+yt-dlp>=2024.0.0
+
+# OpenAI API (for transcription and flashcard generation)
+openai>=1.0.0
+
+# Local Whisper (free transcription alternative)
 openai-whisper>=20231117
 torch>=2.0.0
-transformers>=4.35.0
-accelerate>=0.25.0
-sentencepiece>=0.1.99
+
+# Requests (for copilot-api integration)
+requests>=2.32.0

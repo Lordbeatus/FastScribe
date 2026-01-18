@@ -1,0 +1,4 @@
+# Logs directory for Mac server
+# Server output is redirected here
+
+*.log

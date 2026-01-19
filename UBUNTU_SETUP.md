@@ -23,6 +23,9 @@ cd ~
 git clone https://github.com/Lordbeatus/FastScribe.git
 cd FastScribe
 
+# Clone Copilot API (it's gitignored, needs separate clone)
+git clone https://github.com/B00TK1D/copilot-api.git
+
 # Create virtual environment (fixes "externally managed" error)
 python3 -m venv venv
 source venv/bin/activate

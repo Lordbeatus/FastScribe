@@ -23,14 +23,18 @@ cd ~
 git clone https://github.com/Lordbeatus/FastScribe.git
 cd FastScribe
 
+# Create virtual environment (fixes "externally managed" error)
+python3 -m venv venv
+source venv/bin/activate
+
 # Install Python packages for Whisper
 cd home-server
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 cd ..
 
 # Install Python packages for Copilot API
 cd copilot-api
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 cd ..
 
 # Install ngrok
@@ -49,18 +53,23 @@ chmod +x start_mac_server.sh stop_mac_server.sh
 
 ```bash
 cd ~/FastScribe
+source venv/bin/activate  # Activate virtual environment
 
 # Terminal 1: Whisper server
 cd home-server
-python3 whisper_server.py
+python whisper_server.py
 ```
 
 Wait for: `✅ Whisper model loaded and ready!`
 
+Open a NEW terminal:
 ```bash
+cd ~/FastScribe
+source venv/bin/activate  # Activate in new terminal too
+
 # Terminal 2: Copilot API
-cd ~/FastScribe/copilot-api
-python3 api.py 8080
+cd copilot-api
+python api.py 8080
 ```
 
 **First time**: It will show a URL and code
@@ -94,14 +103,18 @@ curl -X POST http://localhost:8080/api \
 ```bash
 # Whisper
 screen -S whisper
-cd ~/FastScribe/home-server
-python3 whisper_server.py
+cd ~/FastScribe
+source venv/bin/activate
+cd home-server
+python whisper_server.py
 # Press Ctrl+A then D to detach
 
 # Copilot
 screen -S copilot
-cd ~/FastScribe/copilot-api
-python3 api.py 8080
+cd ~/FastScribe
+source venv/bin/activate
+cd copilot-api
+python api.py 8080
 # Press Ctrl+A then D to detach
 
 # Ngrok
@@ -126,7 +139,7 @@ Paste this:
 Description=FastScribe Whisper Server
 After=network.target
 
-[Service]
+[Service]home/YOUR_USERNAME/FastScribe/venv/bin/python
 Type=simple
 User=YOUR_USERNAME
 WorkingDirectory=/home/YOUR_USERNAME/FastScribe/home-server
@@ -155,7 +168,7 @@ After=network.target
 Type=simple
 User=YOUR_USERNAME
 WorkingDirectory=/home/YOUR_USERNAME/FastScribe/copilot-api
-ExecStart=/usr/bin/python3 api.py 8080
+ExecStart=/home/YOUR_USERNAME/FastScribe/venv/bin/python api.py 8080
 Restart=always
 RestartSec=10
 

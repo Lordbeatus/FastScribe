@@ -6,8 +6,17 @@
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install Python 3.11, pip, and ffmpeg
-sudo apt install -y python3.11 python3.11-venv python3-pip ffmpeg
+# Check Python version (Ubuntu comes with Python 3)
+python3 --version
+
+# Install pip, ffmpeg, and Python dev tools
+sudo apt install -y python3-pip python3-dev python3-venv ffmpeg build-essential
+
+# If you want Python 3.11 specifically (optional - system Python works fine):
+# sudo apt install -y software-properties-common
+# sudo add-apt-repository ppa:deadsnakes/ppa -y
+# sudo apt update
+# sudo apt install -y python3.11 python3.11-venv python3.11-dev
 
 # Clone repo
 cd ~
